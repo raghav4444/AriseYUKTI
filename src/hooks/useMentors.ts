@@ -109,27 +109,36 @@ export function useMentors() {
   }, [fetchMentors]);
 
   // Realtime: when mentors or profiles change, refetch
+  // NOTE: Enable Realtime for 'profiles' table in Supabase Dashboard → Database → Replication
   useEffect(() => {
     const channel = supabase
       .channel("mentors-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "mentors" },
-        () => fetchMentors()
+        () => {
+          console.log("🔄 Mentors table changed, refetching...");
+          fetchMentors();
+        }
       )
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles" },
-        () => fetchMentors()
+        (payload) => {
+          console.log("🔄 Profile updated (last_seen?), refetching mentors...", payload);
+          fetchMentors();
+        }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("📡 Realtime subscription status:", status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [fetchMentors]);
 
-  // Recompute isActive every minute (last_seen doesn't change from realtime if we only update from another tab)
+  // Recompute isActive every 30 seconds (to show "Available Now" quickly when mentor logs in)
   useEffect(() => {
     const interval = setInterval(() => {
       setMentors((prev) =>
@@ -138,7 +147,7 @@ export function useMentors() {
           isActive: "lastSeenAt" in m && m.lastSeenAt ? isActive(m.lastSeenAt) : false,
         }))
       );
-    }, 60_000);
+    }, 30_000); // Check every 30 seconds
     return () => clearInterval(interval);
   }, []);
 

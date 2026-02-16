@@ -110,6 +110,38 @@ export const useSupabaseAuth = () => {
     };
   }, [loading]);
 
+  // Heartbeat: update last_seen every 2 minutes while user is logged in
+  useEffect(() => {
+    if (!session?.user) return;
+
+    const updateLastSeen = () => {
+      supabase
+        .from("profiles")
+        .update({ last_seen: new Date().toISOString() })
+        .eq("user_id", session.user.id)
+        .then(({ error }) => {
+          if (error) console.warn("Failed to update last_seen heartbeat:", error.message);
+        });
+    };
+
+    // Update immediately
+    updateLastSeen();
+
+    // Then update every 2 minutes (120 seconds) - keeps them "active" for 5 minutes after last heartbeat
+    const interval = setInterval(updateLastSeen, 120_000);
+
+    // Also update on window focus/visibility change (user comes back to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) updateLastSeen();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [session?.user?.id]);
+
   const fetchUserProfile = async (authUser: SupabaseUser, retryCount = 0) => {
     console.log("🔍 Fetching profile for user:", authUser.id, authUser.email);
 
