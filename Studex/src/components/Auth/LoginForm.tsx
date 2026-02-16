@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, X, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, X, CheckCircle, Copy, Check } from 'lucide-react';
 import { useAuth } from '../AuthProvider';
 
 interface LoginFormProps {
@@ -15,7 +15,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
   const [resetError, setResetError] = useState('');
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const { signIn, loading, resetPassword } = useAuth();
+
+  const copyToClipboard = async (text: string, email: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedEmail(email);
+      setTimeout(() => setCopiedEmail(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,15 +68,84 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
         </div>
 
         {/* Demo accounts: 5 users with different verification / access levels */}
-        <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-100">
-          <p className="font-semibold mb-2">Demo accounts (password: <code className="bg-black/40 px-1 py-0.5 rounded">StudexDemo123!</code>)</p>
-          <ul className="space-y-1.5 text-xs">
-            <li><span className="text-gray-400">Full access:</span> <code className="bg-black/40 px-1 rounded">demo.full1@axiscolleges.in</code> or <code className="bg-black/40 px-1 rounded">demo.full2@axiscolleges.in</code></li>
-            <li><span className="text-gray-400">Partial access:</span> <code className="bg-black/40 px-1 rounded">demo.partial@axiscolleges.in</code> or <code className="bg-black/40 px-1 rounded">demo.pending@axiscolleges.in</code></li>
-            <li><span className="text-gray-400">Read-only:</span> <code className="bg-black/40 px-1 rounded">demo.readonly@axiscolleges.in</code></li>
-          </ul>
-          <p className="mt-2 text-xs text-gray-400">
-            Use any email above to test verified (full), partial, or read-only community access.
+        <div className="mb-6 rounded-lg border-2 border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-orange-500/10 p-4 shadow-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+            <p className="font-bold text-base text-amber-200">Demo Accounts</p>
+          </div>
+          <p className="text-xs text-amber-100/90 mb-3">
+            Password for all: <code className="bg-black/60 px-2 py-1 rounded font-mono text-amber-200">StudexDemo123!</code>
+          </p>
+          <div className="space-y-2 text-xs">
+            <div className="flex items-start gap-2">
+              <span className="text-amber-200 font-medium min-w-[90px]">Full access:</span>
+              <div className="flex flex-wrap gap-1.5 flex-1">
+                {['demo.full1@axiscolleges.in', 'demo.full2@axiscolleges.in'].map((email) => (
+                  <button
+                    key={email}
+                    type="button"
+                    onClick={() => {
+                      setEmail(email);
+                      copyToClipboard(email, email);
+                    }}
+                    className="group relative flex items-center gap-1 bg-black/60 hover:bg-black/80 px-2 py-1 rounded text-amber-200 hover:text-white transition-all cursor-pointer"
+                  >
+                    <code className="text-xs">{email}</code>
+                    {copiedEmail === email ? (
+                      <Check className="w-3 h-3 text-green-400" />
+                    ) : (
+                      <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-amber-200 font-medium min-w-[90px]">Partial:</span>
+              <div className="flex flex-wrap gap-1.5 flex-1">
+                {['demo.partial@axiscolleges.in', 'demo.pending@axiscolleges.in'].map((email) => (
+                  <button
+                    key={email}
+                    type="button"
+                    onClick={() => {
+                      setEmail(email);
+                      copyToClipboard(email, email);
+                    }}
+                    className="group relative flex items-center gap-1 bg-black/60 hover:bg-black/80 px-2 py-1 rounded text-amber-200 hover:text-white transition-all cursor-pointer"
+                  >
+                    <code className="text-xs">{email}</code>
+                    {copiedEmail === email ? (
+                      <Check className="w-3 h-3 text-green-400" />
+                    ) : (
+                      <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="text-amber-200 font-medium min-w-[90px]">Read-only:</span>
+              <div className="flex flex-wrap gap-1.5 flex-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('demo.readonly@axiscolleges.in');
+                    copyToClipboard('demo.readonly@axiscolleges.in', 'demo.readonly@axiscolleges.in');
+                  }}
+                  className="group relative flex items-center gap-1 bg-black/60 hover:bg-black/80 px-2 py-1 rounded text-amber-200 hover:text-white transition-all cursor-pointer"
+                >
+                  <code className="text-xs">demo.readonly@axiscolleges.in</code>
+                  {copiedEmail === 'demo.readonly@axiscolleges.in' ? (
+                    <Check className="w-3 h-3 text-green-400" />
+                  ) : (
+                    <Copy className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-amber-100/80 italic border-t border-amber-500/30 pt-2">
+            💡 Click any email to auto-fill. Test different access levels!
           </p>
         </div>
 
