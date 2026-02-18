@@ -15,7 +15,7 @@ const AuthPage: React.FC = () => {
             <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
               <BookOpen className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-white">CampusLink</h1>
+            <h1 className="text-3xl font-bold text-white">Studex</h1>
           </div>
           
           <h2 className="text-4xl font-bold text-white mb-6 leading-tight">
@@ -59,7 +59,7 @@ const AuthPage: React.FC = () => {
             <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white">CampusLink</h1>
+            <h1 className="text-2xl font-bold text-white">Studex</h1>
           </div>
 
           {isLogin ? (

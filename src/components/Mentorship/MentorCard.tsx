@@ -23,23 +23,33 @@ const MentorCard: React.FC<MentorCardProps> = ({ mentor, onRequestMentorship }) 
             )}
             <span
               className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full shrink-0 ${
-                !mentor.isAvailable
-                  ? 'bg-amber-500/20 text-amber-400'
-                  : mentor.isActive
-                    ? 'bg-green-500/20 text-green-400'
-                    : 'bg-gray-600/30 text-gray-400'
+                mentor.isActive && mentor.isAvailable
+                  ? 'bg-green-500/20 text-green-400'
+                  : !mentor.isAvailable
+                    ? 'bg-amber-500/20 text-amber-400'
+                    : mentor.isActive
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : 'bg-gray-600/30 text-gray-400'
               }`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  !mentor.isAvailable ? 'bg-amber-400' : mentor.isActive ? 'bg-green-400' : 'bg-gray-500'
+                  mentor.isActive && mentor.isAvailable 
+                    ? 'bg-green-400' 
+                    : !mentor.isAvailable 
+                      ? 'bg-amber-400' 
+                      : mentor.isActive
+                        ? 'bg-blue-400'
+                        : 'bg-gray-500'
                 }`}
               />
-              {!mentor.isAvailable
-                ? 'Busy'
-                : mentor.isActive
-                  ? 'Available Now'
-                  : 'Away'}
+              {mentor.isActive && mentor.isAvailable
+                ? 'Available Now'
+                : !mentor.isAvailable
+                  ? 'Busy'
+                  : mentor.isActive
+                    ? 'Online'
+                    : 'Away'}
             </span>
           </div>
           
@@ -74,7 +84,7 @@ const MentorCard: React.FC<MentorCardProps> = ({ mentor, onRequestMentorship }) 
 
           <button
             onClick={() => onRequestMentorship(mentor.id)}
-            disabled={!mentor.isAvailable}
+            disabled={!(mentor.isActive && mentor.isAvailable)}
             className="w-full flex items-center justify-center space-x-2 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-700 disabled:text-gray-400 text-white rounded-lg transition-all duration-200"
           >
             <MessageCircle className="w-4 h-4" />

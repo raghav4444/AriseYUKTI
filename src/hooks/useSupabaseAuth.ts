@@ -59,16 +59,83 @@ export const useSupabaseAuth = () => {
         });
     };
 
+    // Helper function to check if user is from OAuth/SSO
+    const isOAuthUser = (user: SupabaseUser): boolean => {
+      // Check multiple locations where provider info might be stored
+      const provider = user.app_metadata?.provider || 
+                      user.app_metadata?.providers?.[0] ||
+                      user.identities?.[0]?.provider;
+      
+      // Also check if user has any OAuth identities (more reliable)
+      let hasOAuthIdentity = false;
+      if (user.identities && user.identities.length > 0) {
+        hasOAuthIdentity = user.identities.some(identity => 
+          identity.provider === 'google' || 
+          identity.provider === 'azure' || 
+          identity.provider === 'azuread'
+        ) ?? false;
+      }
+      
+      const isOAuth = provider === 'google' || 
+                      provider === 'azure' || 
+                      provider === 'azuread' ||
+                      hasOAuthIdentity;
+      
+      return Boolean(isOAuth);
+    };
+
+    // Helper function to validate SSO email - only allow college emails
+    const validateSSOEmail = async (user: SupabaseUser): Promise<boolean> => {
+      const isOAuth = isOAuthUser(user);
+      
+      // Only validate OAuth/SSO logins
+      if (!isOAuth) {
+        return true; // Not OAuth, allow
+      }
+      
+      const userEmail = user.email?.toLowerCase() || '';
+      
+      // Check if email is a valid college email
+      if (!userEmail || !isValidCollegeEmail(userEmail)) {
+        console.error("❌ BLOCKED: Non-college email detected from SSO:", userEmail);
+        // Sign out immediately
+        await supabase.auth.signOut();
+        setUser(null);
+        setLoading(false);
+        // Store error message to show user
+        sessionStorage.setItem('sso_email_error', 
+          'Only college email addresses (e.g., .edu, .ac.in, @axiscolleges.in) are allowed. Regular Gmail accounts cannot be used. Please use your student ID email to sign in.');
+        return false; // Invalid email, blocked
+      }
+      
+      console.log("✅ SSO email validated successfully:", userEmail);
+      return true; // Valid college email
+    };
+
     // Get initial session
     supabase.auth
       .getSession()
-      .then(({ data: { session }, error }) => {
+      .then(async ({ data: { session }, error }) => {
         clearTimeout(timeoutId);
         console.log("📋 Initial session check:", {
           session: !!session,
           error,
           userEmail: session?.user?.email,
+          provider: session?.user?.app_metadata?.provider,
         });
+        
+        if (session?.user) {
+          // Validate SSO email before proceeding
+          const isValid = await validateSSOEmail(session.user);
+          if (!isValid) {
+            console.error("🚫 Initial session blocked: Invalid email for SSO user");
+            setSession(null);
+            setUser(null);
+            setLoading(false);
+            return; // Exit early - don't proceed
+          }
+        }
+        
         setSession(session);
         if (session?.user) {
           console.log("👤 User found, fetching profile...");
@@ -89,7 +156,26 @@ export const useSupabaseAuth = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔄 Auth state changed:", { event, session: !!session });
+      console.log("🔄 Auth state changed:", { 
+        event, 
+        session: !!session,
+        userEmail: session?.user?.email,
+        provider: session?.user?.app_metadata?.provider,
+      });
+      
+      // Validate SSO email for SIGNED_IN events (including OAuth redirects)
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        const isValid = await validateSSOEmail(session.user);
+        if (!isValid) {
+          console.error("🚫 Access denied: Invalid email for SSO user");
+          // Don't set session or fetch profile - user was signed out
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return; // Exit early - don't proceed with login
+        }
+      }
+      
       setSession(session);
       if (session?.user) {
         await fetchUserProfile(session.user);

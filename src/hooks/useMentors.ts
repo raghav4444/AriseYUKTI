@@ -144,7 +144,7 @@ export function useMentors() {
       setMentors((prev) =>
         prev.map((m) => ({
           ...m,
-          isActive: "lastSeenAt" in m && m.lastSeenAt ? isActive(m.lastSeenAt) : false,
+          isActive: m.lastSeenAt ? isActive(m.lastSeenAt) : false,
         }))
       );
     }, 30_000); // Check every 30 seconds

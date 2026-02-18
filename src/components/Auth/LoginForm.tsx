@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, Eye, EyeOff, X, CheckCircle } from 'lucide-react';
 import { useAuth } from '../AuthProvider';
 
@@ -16,6 +16,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [resetError, setResetError] = useState('');
   const { signIn, signInWithSSO, loading, resetPassword } = useAuth();
+
+  // Check for SSO email validation error on mount
+  useEffect(() => {
+    const ssoError = sessionStorage.getItem('sso_email_error');
+    if (ssoError) {
+      setError(ssoError);
+      sessionStorage.removeItem('sso_email_error');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
